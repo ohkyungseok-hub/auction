@@ -35,7 +35,7 @@
 
 1. 저장소 클론
 ```bash
-git clone [저장소 URL]
+git clone https://github.com/ohkyungseok-hub/auction.git
 cd auction
 ```
 
