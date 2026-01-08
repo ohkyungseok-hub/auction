@@ -96,6 +96,7 @@
         </div>
     </main>
 
+    <script src="api_client.js"></script>
     <script>
         // 로그인 확인
         function checkLogin() {
@@ -136,33 +137,34 @@
             }
         }
 
-        // 내 입찰 내역 렌더링
-        function renderMyBids() {
+        // 내 입찰 내역 렌더링 (비동기)
+        async function renderMyBids() {
             const user = checkLogin();
             if (!user) return;
             
-            const products = JSON.parse(localStorage.getItem('products') || '[]');
+            const products = await getProducts();
             const container = document.getElementById('my-bids-container');
             
             let myBids = [];
-            products.forEach(product => {
-                if (product.bids) {
-                    product.bids.forEach(bid => {
-                        // 입찰자명 또는 이메일로 매칭
-                        const nameMatch = bid.bidderName && (bid.bidderName === user.name || bid.bidderName === user.email.split('@')[0]);
-                        const emailMatch = bid.bidderEmail && bid.bidderEmail === user.email;
-                        if (nameMatch || emailMatch) {
-                            myBids.push({
-                                ...bid,
-                                productName: product.name,
-                                productId: product.id,
-                                auctionEndDate: product.auctionEndDate,
-                                minPrice: product.minPrice
-                            });
-                        }
-                    });
+            for (const product of products) {
+                const bids = await getProductBids(product.id);
+                for (const bid of bids) {
+                    // 입찰자명 또는 이메일로 매칭
+                    const bidderName = bid.bidder_name || bid.bidderName;
+                    const bidderEmail = bid.bidder_email || bid.bidderEmail;
+                    const nameMatch = bidderName && (bidderName === user.name || bidderName === user.email.split('@')[0]);
+                    const emailMatch = bidderEmail && bidderEmail === user.email;
+                    if (nameMatch || emailMatch) {
+                        myBids.push({
+                            ...bid,
+                            productName: product.name,
+                            productId: product.id,
+                            auctionEndDate: product.auction_end_date || product.auctionEndDate,
+                            minPrice: product.min_price || product.minPrice
+                        });
+                    }
                 }
-            });
+            }
             
             if (myBids.length === 0) {
                 container.innerHTML = '<p class="no-data">입찰 내역이 없습니다.</p>';
@@ -191,22 +193,28 @@
             }).join('');
         }
 
-        // 내 상품 렌더링 (유통업체용)
-        function renderMyProducts() {
+        // 내 상품 렌더링 (유통업체용) (비동기)
+        async function renderMyProducts() {
             const user = checkLogin();
             if (!user) return;
             
-            const products = JSON.parse(localStorage.getItem('products') || '[]');
+            const products = await getProducts();
             const container = document.getElementById('my-products-container');
             
-            const myProducts = products.filter(p => p.supplierName === user.name || p.supplierEmail === user.email);
+            const myProducts = products.filter(p => 
+                (p.supplier_name || p.supplierName) === user.name || 
+                (p.supplier_email || p.supplierEmail) === user.email
+            );
             
             if (myProducts.length === 0) {
                 container.innerHTML = '<p class="no-data">등록한 상품이 없습니다.</p>';
                 return;
             }
             
-            container.innerHTML = myProducts.map(product => `
+            // 각 상품의 입찰 수 가져오기
+            const productCards = await Promise.all(myProducts.map(async (product) => {
+                const bids = await getProductBids(product.id);
+                return `
                 <div class="product-card">
                     <div class="product-header">
                         <div class="product-name">${product.name}</div>
@@ -214,16 +222,19 @@
                     <div class="product-info">
                         <div class="product-info-item">
                             <span class="product-info-label">입찰 수</span>
-                            <span class="product-info-value">${product.bids ? product.bids.length : 0}건</span>
+                            <span class="product-info-value">${bids.length}건</span>
                         </div>
                         <div class="product-info-item">
                             <span class="product-info-label">최저가</span>
-                            <span class="product-info-value">${product.minPrice.toLocaleString()}원</span>
+                            <span class="product-info-value">${(product.min_price || product.minPrice).toLocaleString()}원</span>
                         </div>
                     </div>
                     <button class="btn btn-primary" onclick="window.location.href='index.html'">상세보기</button>
                 </div>
-            `).join('');
+            `;
+            }));
+            
+            container.innerHTML = productCards.join('');
         }
 
         // 프로필 로드
@@ -254,9 +265,9 @@
         });
 
         // 페이지 로드 시
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             loadProfile();
-            renderMyBids();
+            await renderMyBids();
         });
     </script>
 

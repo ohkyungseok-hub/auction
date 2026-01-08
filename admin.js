@@ -1,27 +1,6 @@
 // ==================== 데이터 관리 ====================
-function getProducts() {
-    return JSON.parse(localStorage.getItem('products') || '[]');
-}
-
-function saveProducts(products) {
-    localStorage.setItem('products', JSON.stringify(products));
-}
-
-function getMembers() {
-    return JSON.parse(localStorage.getItem('members') || '[]');
-}
-
-function saveMembers(members) {
-    localStorage.setItem('members', JSON.stringify(members));
-}
-
-function getBanners() {
-    return JSON.parse(localStorage.getItem('banners') || '[]');
-}
-
-function saveBanners(banners) {
-    localStorage.setItem('banners', JSON.stringify(banners));
-}
+// api_client.js가 로드되어 있어야 합니다
+// 모든 함수는 비동기로 변경되었습니다
 
 // ==================== 유틸리티 함수 ====================
 function formatDate(dateString) {
@@ -49,9 +28,10 @@ function isExpired(expiryDate) {
 
 function getAuctionStatus(product) {
     const now = new Date();
-    const startDate = new Date(product.auctionStartDate || product.createdAt);
-    const endDate = new Date(product.auctionEndDate);
-    const expired = isExpired(product.expiryDate);
+    const startDate = new Date(product.auction_start_date || product.auctionStartDate || product.created_at || product.createdAt);
+    const endDate = new Date(product.auction_end_date || product.auctionEndDate);
+    const expiryDate = product.expiry_date || product.expiryDate;
+    const expired = isExpired(expiryDate);
     
     if (expired) {
         return { text: '유통기한 만료', class: 'status-expired' };
@@ -73,23 +53,34 @@ function getHighestBid(product) {
 }
 
 // ==================== 통계 업데이트 ====================
-function updateStats() {
-    const products = getProducts();
-    const members = getMembers();
+async function updateStats() {
+    const products = await getProducts();
+    const members = await getMembers();
     const now = new Date();
     
     const totalAuctions = products.length;
     const activeAuctions = products.filter(p => {
-        const startDate = new Date(p.auctionStartDate || p.createdAt);
-        const endDate = new Date(p.auctionEndDate);
-        return startDate <= now && endDate >= now && !isExpired(p.expiryDate);
+        const startDate = new Date(p.auction_start_date || p.auctionStartDate || p.created_at || p.createdAt);
+        const endDate = new Date(p.auction_end_date || p.auctionEndDate);
+        const expiryDate = p.expiry_date || p.expiryDate;
+        return startDate <= now && endDate >= now && !isExpired(expiryDate);
     }).length;
-    const endedAuctions = products.filter(p => isAuctionEnded(p.auctionEndDate) || isExpired(p.expiryDate)).length;
+    const endedAuctions = products.filter(p => {
+        const endDate = p.auction_end_date || p.auctionEndDate;
+        const expiryDate = p.expiry_date || p.expiryDate;
+        return isAuctionEnded(endDate) || isExpired(expiryDate);
+    }).length;
     const scheduledAuctions = products.filter(p => {
-        const startDate = new Date(p.auctionStartDate || p.createdAt);
+        const startDate = new Date(p.auction_start_date || p.auctionStartDate || p.created_at || p.createdAt);
         return startDate > now;
     }).length;
-    const totalBids = products.reduce((sum, p) => sum + (p.bids ? p.bids.length : 0), 0);
+    
+    // 각 상품의 입찰 수 가져오기
+    let totalBids = 0;
+    for (const product of products) {
+        const bids = await getProductBids(product.id);
+        totalBids += bids.length;
+    }
     
     const totalMembers = members.length;
     
@@ -104,7 +95,7 @@ function updateStats() {
 // ==================== 메인 탭 전환 ====================
 let currentMainTab = 'auctions';
 
-function showMainTab(tab) {
+async function showMainTab(tab) {
     currentMainTab = tab;
     
     // 모든 메인 탭 콘텐츠 숨기기
@@ -123,20 +114,20 @@ function showMainTab(tab) {
     
     // 각 탭별 렌더링
     if (tab === 'auctions') {
-        renderAuctions();
+        await renderAuctions();
     } else if (tab === 'members') {
-        renderMembers();
+        await renderMembers();
     } else if (tab === 'products') {
-        renderProducts();
+        await renderProducts();
     } else if (tab === 'banners') {
-        renderBanners();
+        await renderBanners();
     }
 }
 
 // ==================== 경매목록 탭 ====================
 let currentAuctionTab = 'all';
 
-function showAuctionTab(tab) {
+async function showAuctionTab(tab) {
     currentAuctionTab = tab;
     
     document.querySelectorAll('.sub-tabs .tab-btn').forEach(btn => {
@@ -144,36 +135,41 @@ function showAuctionTab(tab) {
     });
     event.target.classList.add('active');
     
-    renderAuctions();
+    await renderAuctions();
 }
 
-function renderAuctions() {
+async function renderAuctions() {
     const tbody = document.getElementById('admin-auctions-tbody');
     const noAuctions = document.getElementById('no-auctions');
     
     if (!tbody) return;
     
-    let products = getProducts();
+    let products = await getProducts();
     const now = new Date();
     
     // 탭에 따라 필터링
     if (currentAuctionTab === 'active') {
         products = products.filter(p => {
-            const startDate = new Date(p.auctionStartDate || p.createdAt);
-            const endDate = new Date(p.auctionEndDate);
-            return startDate <= now && endDate >= now && !isExpired(p.expiryDate);
+            const startDate = new Date(p.auction_start_date || p.auctionStartDate || p.created_at || p.createdAt);
+            const endDate = new Date(p.auction_end_date || p.auctionEndDate);
+            const expiryDate = p.expiry_date || p.expiryDate;
+            return startDate <= now && endDate >= now && !isExpired(expiryDate);
         });
     } else if (currentAuctionTab === 'ended') {
-        products = products.filter(p => isAuctionEnded(p.auctionEndDate) || isExpired(p.expiryDate));
+        products = products.filter(p => {
+            const endDate = p.auction_end_date || p.auctionEndDate;
+            const expiryDate = p.expiry_date || p.expiryDate;
+            return isAuctionEnded(endDate) || isExpired(expiryDate);
+        });
     } else if (currentAuctionTab === 'scheduled') {
         products = products.filter(p => {
-            const startDate = new Date(p.auctionStartDate || p.createdAt);
+            const startDate = new Date(p.auction_start_date || p.auctionStartDate || p.created_at || p.createdAt);
             return startDate > now;
         });
     }
     
     // 최신순으로 정렬
-    products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    products.sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt));
     
     tbody.innerHTML = '';
     
@@ -186,20 +182,21 @@ function renderAuctions() {
     if (noAuctions) noAuctions.style.display = 'none';
     tbody.parentElement.parentElement.style.display = 'block';
     
-    products.forEach(product => {
+    for (const product of products) {
         const status = getAuctionStatus(product);
-        const bidCount = product.bids ? product.bids.length : 0;
-        const highestBid = getHighestBid(product);
-        const startDate = product.auctionStartDate || product.createdAt;
+        const bids = await getProductBids(product.id);
+        const bidCount = bids.length;
+        const highestBid = bids.length > 0 ? `${Math.max(...bids.map(b => b.amount)).toLocaleString()}원` : '-';
+        const startDate = product.auction_start_date || product.auctionStartDate || product.created_at || product.createdAt;
         
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${product.name}</td>
-            <td>${product.supplierName}</td>
-            <td>${formatDate(product.expiryDate)}</td>
+            <td>${product.supplier_name || product.supplierName}</td>
+            <td>${formatDate(product.expiry_date || product.expiryDate)}</td>
             <td>${formatDate(startDate)}</td>
-            <td>${formatDate(product.auctionEndDate)}</td>
-            <td>${product.minPrice.toLocaleString()}원</td>
+            <td>${formatDate(product.auction_end_date || product.auctionEndDate)}</td>
+            <td>${(product.min_price || product.minPrice).toLocaleString()}원</td>
             <td>${bidCount}건</td>
             <td>${highestBid}</td>
             <td><span class="product-status ${status.class}">${status.text}</span></td>
@@ -211,31 +208,29 @@ function renderAuctions() {
             </td>
         `;
         tbody.appendChild(row);
-    });
+    }
 }
 
-function deleteAuction(productId) {
+async function deleteAuction(productId) {
     if (!confirm('정말 이 경매를 삭제하시겠습니까?')) {
         return;
     }
     
-    let products = getProducts();
-    products = products.filter(p => p.id !== productId);
-    saveProducts(products);
+    await deleteProduct(productId);
     
     alert('경매가 삭제되었습니다.');
-    updateStats();
-    renderAuctions();
+    await updateStats();
+    await renderAuctions();
 }
 
 // ==================== 회원관리 탭 ====================
-function renderMembers() {
+async function renderMembers() {
     const tbody = document.getElementById('admin-members-tbody');
     const noMembers = document.getElementById('no-members');
     
     if (!tbody) return;
     
-    const members = getMembers();
+    const members = await getMembers();
     
     tbody.innerHTML = '';
     
@@ -256,7 +251,7 @@ function renderMembers() {
             <td>${member.company || '-'}</td>
             <td>${member.phone || '-'}</td>
             <td>${member.type === 'supplier' ? '유통업체' : '매입업체'}</td>
-            <td>${formatDate(member.createdAt)}</td>
+            <td>${formatDate(member.created_at || member.createdAt)}</td>
             <td>
                 <div class="admin-actions">
                     <button class="btn btn-primary btn-small" onclick="editMember('${member.id}')">수정</button>
@@ -275,8 +270,8 @@ function openAddMemberModal() {
     document.getElementById('member-modal').classList.add('show');
 }
 
-function editMember(memberId) {
-    const members = getMembers();
+async function editMember(memberId) {
+    const members = await getMembers();
     const member = members.find(m => m.id === memberId);
     
     if (!member) {
@@ -299,62 +294,63 @@ function closeMemberModal() {
     document.getElementById('member-form').reset();
 }
 
-function deleteMember(memberId) {
+async function deleteMember(memberId) {
     if (!confirm('정말 이 회원을 삭제하시겠습니까?')) {
         return;
     }
     
-    let members = getMembers();
+    // API에 회원 삭제 기능이 없으므로 LocalStorage 폴백 사용
+    let members = await getMembers();
     members = members.filter(m => m.id !== memberId);
-    saveMembers(members);
+    // saveMembers는 api_client.js에 없으므로 LocalStorage 직접 사용
+    localStorage.setItem('members', JSON.stringify(members));
     
     alert('회원이 삭제되었습니다.');
-    updateStats();
-    renderMembers();
+    await updateStats();
+    await renderMembers();
 }
 
-// 회원 폼 제출
-document.getElementById('member-form').addEventListener('submit', function(e) {
+// 회원 폼 제출 (비동기)
+document.getElementById('member-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const memberId = this.dataset.memberId;
-    const member = {
-        id: memberId || Date.now().toString(),
+    const memberData = {
         name: document.getElementById('member-name').value,
         email: document.getElementById('member-email').value,
         company: document.getElementById('member-company').value,
         phone: document.getElementById('member-phone').value,
-        type: document.getElementById('member-type').value,
-        createdAt: memberId ? getMembers().find(m => m.id === memberId).createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        type: document.getElementById('member-type').value
     };
     
-    let members = getMembers();
-    
     if (memberId) {
+        // 수정 기능은 API에 없으므로 LocalStorage 사용
+        let members = await getMembers();
         const index = members.findIndex(m => m.id === memberId);
         if (index !== -1) {
-            members[index] = member;
+            members[index] = { ...members[index], ...memberData, updatedAt: new Date().toISOString() };
+            localStorage.setItem('members', JSON.stringify(members));
         }
+        alert('회원 정보가 수정되었습니다.');
     } else {
-        members.push(member);
+        // 회원 추가
+        await addMember(memberData);
+        alert('회원이 추가되었습니다.');
     }
     
-    saveMembers(members);
-    alert(memberId ? '회원 정보가 수정되었습니다.' : '회원이 추가되었습니다.');
     closeMemberModal();
-    updateStats();
-    renderMembers();
+    await updateStats();
+    await renderMembers();
 });
 
 // ==================== 상품관리 탭 ====================
-function renderProducts() {
+async function renderProducts() {
     const tbody = document.getElementById('admin-products-tbody');
     const noProducts = document.getElementById('no-products');
     
     if (!tbody) return;
     
-    const products = getProducts();
+    const products = await getProducts();
     
     tbody.innerHTML = '';
     
@@ -371,14 +367,14 @@ function renderProducts() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${product.name}</td>
-            <td>${product.supplierName}</td>
+            <td>${product.supplier_name || product.supplierName}</td>
             <td>${product.quantity} ${product.unit || '개'}</td>
-            <td>${product.minPrice.toLocaleString()}원</td>
-            <td>${formatDate(product.createdAt)}</td>
+            <td>${(product.min_price || product.minPrice).toLocaleString()}원</td>
+            <td>${formatDate(product.created_at || product.createdAt)}</td>
             <td>
                 <div class="admin-actions">
                     <button class="btn btn-primary btn-small" onclick="editProduct('${product.id}')">수정</button>
-                    <button class="btn btn-danger btn-small" onclick="deleteProduct('${product.id}')">삭제</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteProductAdmin('${product.id}')">삭제</button>
                 </div>
             </td>
         `;
@@ -393,9 +389,8 @@ function openAddProductModal() {
     document.getElementById('product-modal').classList.add('show');
 }
 
-function editProduct(productId) {
-    const products = getProducts();
-    const product = products.find(p => p.id === productId);
+async function editProduct(productId) {
+    const product = await getProductById(productId);
     
     if (!product) {
         alert('상품을 찾을 수 없습니다.');
@@ -407,8 +402,8 @@ function editProduct(productId) {
     document.getElementById('admin-product-description').value = product.description || '';
     document.getElementById('admin-product-quantity').value = product.quantity;
     document.getElementById('admin-product-unit').value = product.unit || '';
-    document.getElementById('admin-product-min-price').value = product.minPrice;
-    document.getElementById('admin-product-supplier').value = product.supplierName;
+    document.getElementById('admin-product-min-price').value = product.min_price || product.minPrice;
+    document.getElementById('admin-product-supplier').value = product.supplier_name || product.supplierName;
     document.getElementById('product-form-admin').dataset.productId = productId;
     document.getElementById('product-modal').classList.add('show');
 }
@@ -418,70 +413,79 @@ function closeProductModal() {
     document.getElementById('product-form-admin').reset();
 }
 
-function deleteProduct(productId) {
+async function deleteProductAdmin(productId) {
     if (!confirm('정말 이 상품을 삭제하시겠습니까?')) {
         return;
     }
     
-    let products = getProducts();
-    products = products.filter(p => p.id !== productId);
-    saveProducts(products);
+    await deleteProduct(productId);
     
     alert('상품이 삭제되었습니다.');
-    updateStats();
-    renderProducts();
-    renderAuctions();
+    await updateStats();
+    await renderProducts();
+    await renderAuctions();
 }
 
-// 상품 폼 제출
-document.getElementById('product-form-admin').addEventListener('submit', function(e) {
+// 상품 폼 제출 (비동기)
+document.getElementById('product-form-admin').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const productId = this.dataset.productId;
-    const products = getProducts();
-    const existingProduct = productId ? products.find(p => p.id === productId) : null;
     
-    const product = {
-        id: productId || Date.now().toString(),
+    const productData = {
         name: document.getElementById('admin-product-name').value,
         description: document.getElementById('admin-product-description').value,
         quantity: parseInt(document.getElementById('admin-product-quantity').value),
         unit: document.getElementById('admin-product-unit').value || '개',
         minPrice: parseInt(document.getElementById('admin-product-min-price').value),
-        supplierName: document.getElementById('admin-product-supplier').value,
-        createdAt: existingProduct ? existingProduct.createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        expiryDate: existingProduct ? existingProduct.expiryDate : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        auctionStartDate: existingProduct ? (existingProduct.auctionStartDate || existingProduct.createdAt) : new Date().toISOString(),
-        auctionEndDate: existingProduct ? existingProduct.auctionEndDate : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        bids: existingProduct ? (existingProduct.bids || []) : []
+        supplierName: document.getElementById('admin-product-supplier').value
     };
     
     if (productId) {
-        const index = products.findIndex(p => p.id === productId);
-        if (index !== -1) {
-            products[index] = product;
+        // 수정 기능은 API에 없으므로 LocalStorage 사용
+        const existingProduct = await getProductById(productId);
+        if (existingProduct) {
+            const updatedProduct = {
+                ...existingProduct,
+                ...productData,
+                updatedAt: new Date().toISOString()
+            };
+            // LocalStorage 직접 업데이트 (API에 수정 기능 없음)
+            let products = await getProducts();
+            const index = products.findIndex(p => p.id === productId);
+            if (index !== -1) {
+                products[index] = updatedProduct;
+                localStorage.setItem('products', JSON.stringify(products));
+            }
         }
+        alert('상품이 수정되었습니다.');
     } else {
-        products.push(product);
+        // 상품 추가
+        const now = new Date();
+        const product = {
+            ...productData,
+            expiryDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            auctionStartDate: now.toISOString(),
+            auctionEndDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        await addProduct(product);
+        alert('상품이 추가되었습니다.');
     }
     
-    saveProducts(products);
-    alert(productId ? '상품이 수정되었습니다.' : '상품이 추가되었습니다.');
     closeProductModal();
-    updateStats();
-    renderProducts();
-    renderAuctions();
+    await updateStats();
+    await renderProducts();
+    await renderAuctions();
 });
 
 // ==================== 배너관리 탭 ====================
-function renderBanners() {
+async function renderBanners() {
     const container = document.getElementById('admin-banners-container');
     const noBanners = document.getElementById('no-banners');
     
     if (!container) return;
     
-    const banners = getBanners().sort((a, b) => a.order - b.order);
+    const banners = (await getBanners()).sort((a, b) => (a.order_index || a.order || 0) - (b.order_index || b.order || 0));
     
     container.innerHTML = '';
     
@@ -497,15 +501,18 @@ function renderBanners() {
     banners.forEach(banner => {
         const bannerCard = document.createElement('div');
         bannerCard.className = 'banner-card';
+        const isActive = banner.active === 1 || banner.active === true;
+        const imageUrl = banner.image_url || banner.imageUrl;
+        const order = banner.order_index || banner.order || 0;
         bannerCard.innerHTML = `
             <div class="banner-card-header">
                 <h4>${banner.title}</h4>
-                <span class="banner-status ${banner.active ? 'active' : 'inactive'}">${banner.active ? '활성' : '비활성'}</span>
+                <span class="banner-status ${isActive ? 'active' : 'inactive'}">${isActive ? '활성' : '비활성'}</span>
             </div>
             <div class="banner-card-body">
                 <p>${banner.description || ''}</p>
-                <p class="banner-order">순서: ${banner.order}</p>
-                ${banner.imageUrl ? `<img src="${banner.imageUrl}" alt="${banner.title}" class="banner-preview">` : ''}
+                <p class="banner-order">순서: ${order}</p>
+                ${imageUrl ? `<img src="${imageUrl}" alt="${banner.title}" class="banner-preview">` : ''}
             </div>
             <div class="banner-card-actions">
                 <button class="btn btn-primary btn-small" onclick="editBanner('${banner.id}')">수정</button>
@@ -525,8 +532,8 @@ function openAddBannerModal() {
     document.getElementById('banner-modal').classList.add('show');
 }
 
-function editBanner(bannerId) {
-    const banners = getBanners();
+async function editBanner(bannerId) {
+    const banners = await getBanners();
     const banner = banners.find(b => b.id === bannerId);
     
     if (!banner) {
@@ -537,10 +544,10 @@ function editBanner(bannerId) {
     document.getElementById('banner-modal-title').textContent = '배너 수정';
     document.getElementById('banner-title').value = banner.title;
     document.getElementById('banner-description').value = banner.description || '';
-    document.getElementById('banner-image-url').value = banner.imageUrl || '';
-    document.getElementById('banner-link').value = banner.link || '';
-    document.getElementById('banner-order').value = banner.order;
-    document.getElementById('banner-active').checked = banner.active !== false;
+    document.getElementById('banner-image-url').value = banner.image_url || banner.imageUrl || '';
+    document.getElementById('banner-link').value = banner.link_url || banner.link || '';
+    document.getElementById('banner-order').value = banner.order_index || banner.order || 0;
+    document.getElementById('banner-active').checked = banner.active === 1 || banner.active === true;
     document.getElementById('banner-form').dataset.bannerId = bannerId;
     document.getElementById('banner-modal').classList.add('show');
 }
@@ -550,51 +557,51 @@ function closeBannerModal() {
     document.getElementById('banner-form').reset();
 }
 
-function deleteBanner(bannerId) {
+async function deleteBanner(bannerId) {
     if (!confirm('정말 이 배너를 삭제하시겠습니까?')) {
         return;
     }
     
-    let banners = getBanners();
+    // API에 배너 삭제 기능이 없으므로 LocalStorage 사용
+    let banners = await getBanners();
     banners = banners.filter(b => b.id !== bannerId);
-    saveBanners(banners);
+    localStorage.setItem('banners', JSON.stringify(banners));
     
     alert('배너가 삭제되었습니다.');
-    renderBanners();
+    await renderBanners();
 }
 
-// 배너 폼 제출
-document.getElementById('banner-form').addEventListener('submit', function(e) {
+// 배너 폼 제출 (비동기)
+document.getElementById('banner-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const bannerId = this.dataset.bannerId;
-    const banner = {
-        id: bannerId || Date.now().toString(),
+    const bannerData = {
         title: document.getElementById('banner-title').value,
         description: document.getElementById('banner-description').value,
         imageUrl: document.getElementById('banner-image-url').value,
         link: document.getElementById('banner-link').value,
         order: parseInt(document.getElementById('banner-order').value),
-        active: document.getElementById('banner-active').checked,
-        createdAt: bannerId ? getBanners().find(b => b.id === bannerId).createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        active: document.getElementById('banner-active').checked
     };
     
-    let banners = getBanners();
-    
     if (bannerId) {
+        // 수정 기능은 API에 없으므로 LocalStorage 사용
+        let banners = await getBanners();
         const index = banners.findIndex(b => b.id === bannerId);
         if (index !== -1) {
-            banners[index] = banner;
+            banners[index] = { ...banners[index], ...bannerData, updatedAt: new Date().toISOString() };
+            localStorage.setItem('banners', JSON.stringify(banners));
         }
+        alert('배너가 수정되었습니다.');
     } else {
-        banners.push(banner);
+        // 배너 추가
+        await addBanner(bannerData);
+        alert('배너가 추가되었습니다.');
     }
     
-    saveBanners(banners);
-    alert(bannerId ? '배너가 수정되었습니다.' : '배너가 추가되었습니다.');
     closeBannerModal();
-    renderBanners();
+    await renderBanners();
 });
 
 // ==================== 입찰 내역 보기 ====================

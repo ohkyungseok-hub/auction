@@ -65,24 +65,23 @@
     </main>
 
     <script>
-        // 로그인 폼 처리
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+        // 로그인 폼 처리 (비동기)
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('remember-me').checked;
             
-            // 간단한 로그인 처리 (실제로는 서버 인증 필요)
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.email === email && u.password === password);
+            // 데이터베이스에서 회원 찾기
+            const member = await getMemberByEmail(email);
             
-            if (user) {
+            if (member && (!password || member.password === password)) {
                 // 로그인 정보 저장
                 const loginData = {
-                    email: user.email,
-                    name: user.name,
-                    type: user.type || 'buyer',
+                    email: member.email,
+                    name: member.name,
+                    type: member.type || 'buyer',
                     loginTime: new Date().toISOString()
                 };
                 

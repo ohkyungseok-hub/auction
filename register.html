@@ -106,14 +106,14 @@
         </div>
     </footer>
 
+    <script src="api_client.js"></script>
     <script src="script.js"></script>
     <script>
-        // 상품 등록 폼 처리
-        document.getElementById('product-form').addEventListener('submit', function(e) {
+        // 상품 등록 폼 처리 (비동기)
+        document.getElementById('product-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const product = {
-                id: Date.now().toString(),
                 name: document.getElementById('product-name').value,
                 description: document.getElementById('product-description').value,
                 expiryDate: document.getElementById('expiry-date').value,
@@ -121,23 +121,22 @@
                 minPrice: parseInt(document.getElementById('min-price').value),
                 quantity: parseInt(document.getElementById('quantity').value),
                 unit: document.getElementById('unit').value || '개',
-                supplierName: document.getElementById('supplier-name').value,
-                createdAt: new Date().toISOString(),
-                bids: []
+                supplierName: document.getElementById('supplier-name').value
             };
 
-            // 로컬 스토리지에 저장
-            let products = JSON.parse(localStorage.getItem('products') || '[]');
-            products.push(product);
-            localStorage.setItem('products', JSON.stringify(products));
-
-            alert('경매가 성공적으로 등록되었습니다!');
-            this.reset();
-            
-            // 경매 목록 페이지로 이동
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
+            // 데이터베이스에 저장
+            try {
+                const productId = await addProduct(product);
+                alert('경매가 성공적으로 등록되었습니다!');
+                this.reset();
+                
+                // 경매 목록 페이지로 이동
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                alert('경매 등록 중 오류가 발생했습니다: ' + error.message);
+            }
         });
     </script>
 </body>

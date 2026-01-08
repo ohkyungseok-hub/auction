@@ -1,11 +1,5 @@
-// 상품 데이터 관리
-function getProducts() {
-    return JSON.parse(localStorage.getItem('products') || '[]');
-}
-
-function saveProducts(products) {
-    localStorage.setItem('products', JSON.stringify(products));
-}
+// 상품 데이터 관리 (데이터베이스 API 사용)
+// api_client.js가 로드되어 있어야 합니다
 
 // 카운트다운 계산
 function getTimeRemaining(endDate) {
@@ -54,9 +48,11 @@ function formatDate(dateString) {
 
 // 상품 카드 생성
 function createProductCard(product) {
-    const timeRemaining = getTimeRemaining(product.auctionEndDate);
+    const auctionEndDate = product.auction_end_date || product.auctionEndDate;
+    const expiryDateStr = product.expiry_date || product.expiryDate;
+    const timeRemaining = getTimeRemaining(auctionEndDate);
     const isEnded = timeRemaining.ended;
-    const expiryDate = new Date(product.expiryDate);
+    const expiryDate = new Date(expiryDateStr);
     const isExpired = expiryDate < new Date();
     
     const card = document.createElement('div');
@@ -73,9 +69,10 @@ function createProductCard(product) {
         statusText = '유통기한 만료';
     }
     
-    const bidCount = product.bids ? product.bids.length : 0;
-    const highestBid = product.bids && product.bids.length > 0 
-        ? Math.max(...product.bids.map(b => b.amount))
+    const bids = product.bids || [];
+    const bidCount = bids.length;
+    const highestBid = bids.length > 0 
+        ? Math.max(...bids.map(b => b.amount || b.amount))
         : null;
     
     card.innerHTML = `
@@ -86,19 +83,19 @@ function createProductCard(product) {
         <div class="product-info">
             <div class="product-info-item">
                 <span class="product-info-label">유통업체</span>
-                <span class="product-info-value">${product.supplierName}</span>
+                <span class="product-info-value">${product.supplier_name || product.supplierName}</span>
             </div>
             <div class="product-info-item">
                 <span class="product-info-label">유통기한</span>
-                <span class="product-info-value">${formatDate(product.expiryDate)}</span>
+                <span class="product-info-value">${formatDate(product.expiry_date || product.expiryDate)}</span>
             </div>
             <div class="product-info-item">
                 <span class="product-info-label">수량</span>
-                <span class="product-info-value">${product.quantity} ${product.unit}</span>
+                <span class="product-info-value">${product.quantity} ${product.unit || '개'}</span>
             </div>
             <div class="product-info-item">
                 <span class="product-info-label">최저가</span>
-                <span class="product-info-value">${product.minPrice.toLocaleString()}원</span>
+                <span class="product-info-value">${(product.min_price || product.minPrice).toLocaleString()}원</span>
             </div>
             ${product.description ? `
             <div class="product-info-item">
@@ -124,14 +121,15 @@ function createProductCard(product) {
     return card;
 }
 
-// 상품 목록 렌더링
-function renderProducts() {
+// 상품 목록 렌더링 (비동기)
+async function renderProducts() {
     const container = document.getElementById('products-container');
     const noProducts = document.getElementById('no-products');
     
     if (!container) return;
     
-    let products = getProducts();
+    // 데이터베이스에서 상품 가져오기
+    let products = await getProducts();
     
     // 진행 중인 경매만 필터링 (선택사항: 종료된 것도 보여주려면 이 부분 제거)
     // products = products.filter(p => !getTimeRemaining(p.auctionEndDate).ended);
@@ -148,12 +146,17 @@ function renderProducts() {
     container.style.display = 'grid';
     
     // 최신순으로 정렬
-    products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    products.sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt));
     
-    products.forEach(product => {
+    // 입찰 정보를 각 상품에 추가
+    for (const product of products) {
+        if (!product.bids) {
+            const bids = await getProductBids(product.id);
+            product.bids = bids;
+        }
         const card = createProductCard(product);
         container.appendChild(card);
-    });
+    }
     
     // 카운트다운 업데이트를 위해 1초마다 다시 렌더링
     setTimeout(() => {
@@ -161,8 +164,8 @@ function renderProducts() {
     }, 1000);
 }
 
-// 입찰 모달 열기
-function openBidModal(productId) {
+// 입찰 모달 열기 (비동기)
+async function openBidModal(productId) {
     // 로그인 확인
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') || 'null');
     if (!currentUser) {
@@ -178,8 +181,8 @@ function openBidModal(productId) {
     const bidAmount = document.getElementById('bid-amount');
     const bidderNameInput = document.getElementById('bidder-name');
     
-    const products = getProducts();
-    const product = products.find(p => p.id === productId);
+    // 데이터베이스에서 상품 가져오기
+    const product = await getProductById(productId);
     
     if (!product) {
         alert('상품을 찾을 수 없습니다.');
@@ -188,14 +191,15 @@ function openBidModal(productId) {
     
     productInfo.innerHTML = `
         <h3>${product.name}</h3>
-        <p>유통업체: ${product.supplierName}</p>
-        <p>수량: ${product.quantity} ${product.unit}</p>
-        <p>최저가: ${product.minPrice.toLocaleString()}원</p>
-        <p>유통기한: ${formatDate(product.expiryDate)}</p>
+        <p>유통업체: ${product.supplier_name || product.supplierName}</p>
+        <p>수량: ${product.quantity} ${product.unit || '개'}</p>
+        <p>최저가: ${(product.min_price || product.minPrice).toLocaleString()}원</p>
+        <p>유통기한: ${formatDate(product.expiry_date || product.expiryDate)}</p>
     `;
     
-    minPriceHint.textContent = `최저가: ${product.minPrice.toLocaleString()}원 이상 입찰해주세요.`;
-    bidAmount.min = product.minPrice;
+    const minPrice = product.min_price || product.minPrice;
+    minPriceHint.textContent = `최저가: ${minPrice.toLocaleString()}원 이상 입찰해주세요.`;
+    bidAmount.min = minPrice;
     bidAmount.value = '';
     
     // 로그인한 사용자 정보 자동 입력
@@ -216,8 +220,8 @@ function closeBidModal() {
     document.getElementById('bid-form').reset();
 }
 
-// 입찰 처리
-function handleBidSubmit(e) {
+// 입찰 처리 (비동기)
+async function handleBidSubmit(e) {
     e.preventDefault();
     
     const productId = e.target.dataset.productId;
@@ -234,50 +238,43 @@ function handleBidSubmit(e) {
         return;
     }
     
-    let products = getProducts();
-    const product = products.find(p => p.id === productId);
+    // 데이터베이스에서 상품 가져오기
+    const product = await getProductById(productId);
     
     if (!product) {
         alert('상품을 찾을 수 없습니다.');
         return;
     }
     
+    const auctionEndDate = product.auction_end_date || product.auctionEndDate;
+    
     // 경매 종료 확인
-    if (getTimeRemaining(product.auctionEndDate).ended) {
+    if (getTimeRemaining(auctionEndDate).ended) {
         alert('이미 종료된 경매입니다.');
         closeBidModal();
         renderProducts();
         return;
     }
     
-    // 최저가 확인
-    if (bidAmount < product.minPrice) {
-        alert(`최저가(${product.minPrice.toLocaleString()}원) 이상으로 입찰해주세요.`);
-        return;
-    }
+    const minPrice = product.min_price || product.minPrice;
     
-    // 입찰 추가
-    if (!product.bids) {
-        product.bids = [];
+    // 최저가 확인
+    if (bidAmount < minPrice) {
+        alert(`최저가(${minPrice.toLocaleString()}원) 이상으로 입찰해주세요.`);
+        return;
     }
     
     // 로그인한 사용자 정보 가져오기
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') || 'null');
     
     const bid = {
-        id: Date.now().toString(),
         bidderName: bidderName,
         bidderEmail: currentUser ? currentUser.email : '',
-        amount: bidAmount,
-        timestamp: new Date().toISOString()
+        amount: bidAmount
     };
     
-    product.bids.push(bid);
-    
-    // 상품 업데이트
-    const index = products.findIndex(p => p.id === productId);
-    products[index] = product;
-    saveProducts(products);
+    // 데이터베이스에 입찰 추가
+    await addBid(productId, bid);
     
     alert('입찰이 완료되었습니다!');
     closeBidModal();
