@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마켓베르데 - 경매 등록</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="container">
+                <div class="logo">마켓베르데</div>
+                <div class="header-right">
+                    <a href="index.html" class="back-link">← 홈으로</a>
+                </div>
+            </div>
+        </div>
+        <nav class="main-nav">
+            <div class="container">
+                <a href="index.html">홈</a>
+                <a href="index.html#products">경매 목록</a>
+                <a href="register.html" class="active">경매 등록</a>
+                <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>경매 등록</h2>
+            <p>유통기한이 임박한 상품 정보를 등록하세요</p>
+        </div>
+
+        <div class="form-container">
+            <form id="product-form">
+                <div class="form-group">
+                    <label for="product-name">상품명 *</label>
+                    <input type="text" id="product-name" required placeholder="예: 신선한 사과 10kg">
+                </div>
+
+                <div class="form-group">
+                    <label for="product-description">상품 설명</label>
+                    <textarea id="product-description" rows="4" placeholder="상품에 대한 상세 설명을 입력하세요"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expiry-date">유통기한 *</label>
+                        <input type="datetime-local" id="expiry-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="auction-end-date">경매 종료 시간 *</label>
+                        <input type="datetime-local" id="auction-end-date" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="min-price">입찰 최저가 (원) *</label>
+                    <input type="number" id="min-price" required min="0" placeholder="최소 입찰 금액을 입력하세요">
+                </div>
+
+                <div class="form-group">
+                    <label for="quantity">수량 *</label>
+                    <input type="number" id="quantity" required min="1" placeholder="상품 수량">
+                </div>
+
+                <div class="form-group">
+                    <label for="unit">단위</label>
+                    <input type="text" id="unit" placeholder="예: 박스, 개, kg 등">
+                </div>
+
+                <div class="form-group">
+                    <label for="supplier-name">유통업체명 *</label>
+                    <input type="text" id="supplier-name" required placeholder="회사명을 입력하세요">
+                </div>
+
+                <div class="form-actions">
+                    <button type="reset" class="btn btn-secondary">초기화</button>
+                    <button type="submit" class="btn btn-primary">경매 등록</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>마켓베르데</h3>
+                    <p>회사명: 에이포스</p>
+                    <p>대표자: 황지후</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="index.html#products">경매 목록</a>
+                    <a href="register.html">경매 등록</a>
+                    <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+                    <a href="backoffice-login.html">백오피스</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 마켓베르데 (에이포스). All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // 상품 등록 폼 처리
+        document.getElementById('product-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const product = {
+                id: Date.now().toString(),
+                name: document.getElementById('product-name').value,
+                description: document.getElementById('product-description').value,
+                expiryDate: document.getElementById('expiry-date').value,
+                auctionEndDate: document.getElementById('auction-end-date').value,
+                minPrice: parseInt(document.getElementById('min-price').value),
+                quantity: parseInt(document.getElementById('quantity').value),
+                unit: document.getElementById('unit').value || '개',
+                supplierName: document.getElementById('supplier-name').value,
+                createdAt: new Date().toISOString(),
+                bids: []
+            };
+
+            // 로컬 스토리지에 저장
+            let products = JSON.parse(localStorage.getItem('products') || '[]');
+            products.push(product);
+            localStorage.setItem('products', JSON.stringify(products));
+
+            alert('경매가 성공적으로 등록되었습니다!');
+            this.reset();
+            
+            // 경매 목록 페이지로 이동
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

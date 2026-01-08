@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>백오피스 - 마켓베르데</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="container">
+                <div class="logo">마켓베르데 <span class="admin-badge">백오피스</span></div>
+                <div class="header-right">
+                    <a href="index.html" class="back-link">← 프론트로</a>
+                    <a href="#" class="login-btn" onclick="logout()">로그아웃</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>백오피스 관리</h2>
+            <p>전체 상품 및 입찰 내역을 관리하세요</p>
+        </div>
+
+        <div class="admin-stats">
+            <div class="stat-card">
+                <h3>전체 경매</h3>
+                <p id="total-auctions">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>진행 중</h3>
+                <p id="active-auctions">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>종료됨</h3>
+                <p id="ended-auctions">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>예정</h3>
+                <p id="scheduled-auctions">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>전체 회원</h3>
+                <p id="total-members">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>총 입찰 건수</h3>
+                <p id="total-bids">0</p>
+            </div>
+        </div>
+
+        <!-- 메인 탭 메뉴 -->
+        <div class="admin-main-tabs">
+            <button class="main-tab-btn active" onclick="showMainTab('auctions')">경매목록</button>
+            <button class="main-tab-btn" onclick="showMainTab('members')">회원관리</button>
+            <button class="main-tab-btn" onclick="showMainTab('products')">상품관리</button>
+            <button class="main-tab-btn" onclick="showMainTab('banners')">배너관리</button>
+        </div>
+
+        <!-- 경매목록 탭 -->
+        <div id="tab-auctions" class="main-tab-content active">
+            <div class="sub-tabs">
+                <button class="tab-btn active" onclick="showAuctionTab('all')">전체</button>
+                <button class="tab-btn" onclick="showAuctionTab('active')">진행중</button>
+                <button class="tab-btn" onclick="showAuctionTab('ended')">종료</button>
+                <button class="tab-btn" onclick="showAuctionTab('scheduled')">예정</button>
+            </div>
+
+            <div id="admin-auctions-container" class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>상품명</th>
+                            <th>유통업체</th>
+                            <th>유통기한</th>
+                            <th>경매 시작</th>
+                            <th>경매 종료</th>
+                            <th>최저가</th>
+                            <th>입찰 수</th>
+                            <th>최고가</th>
+                            <th>상태</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-auctions-tbody">
+                        <!-- 동적으로 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="no-auctions" class="no-products" style="display: none;">
+                <p>등록된 경매가 없습니다.</p>
+            </div>
+        </div>
+
+        <!-- 회원관리 탭 -->
+        <div id="tab-members" class="main-tab-content">
+            <div class="tab-header">
+                <h3>회원 목록</h3>
+                <button class="btn btn-primary" onclick="openAddMemberModal()">회원 추가</button>
+            </div>
+
+            <div id="admin-members-container" class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>이메일</th>
+                            <th>회사명</th>
+                            <th>전화번호</th>
+                            <th>회원유형</th>
+                            <th>가입일</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-members-tbody">
+                        <!-- 동적으로 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="no-members" class="no-products" style="display: none;">
+                <p>등록된 회원이 없습니다.</p>
+            </div>
+        </div>
+
+        <!-- 상품관리 탭 -->
+        <div id="tab-products" class="main-tab-content">
+            <div class="tab-header">
+                <h3>상품 목록</h3>
+                <button class="btn btn-primary" onclick="openAddProductModal()">상품 추가</button>
+            </div>
+
+            <div id="admin-products-container" class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>상품명</th>
+                            <th>유통업체</th>
+                            <th>수량</th>
+                            <th>최저가</th>
+                            <th>등록일</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-products-tbody">
+                        <!-- 동적으로 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="no-products" class="no-products" style="display: none;">
+                <p>등록된 상품이 없습니다.</p>
+            </div>
+        </div>
+
+        <!-- 배너관리 탭 -->
+        <div id="tab-banners" class="main-tab-content">
+            <div class="tab-header">
+                <h3>배너 목록</h3>
+                <button class="btn btn-primary" onclick="openAddBannerModal()">배너 추가</button>
+            </div>
+
+            <div id="admin-banners-container" class="banners-grid">
+                <!-- 동적으로 추가됩니다 -->
+            </div>
+
+            <div id="no-banners" class="no-products" style="display: none;">
+                <p>등록된 배너가 없습니다.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 입찰 내역 모달 -->
+    <div id="bids-modal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeBidsModal()">&times;</span>
+            <h2>입찰 내역</h2>
+            <div id="bids-list-container">
+                <!-- 입찰 내역이 여기에 표시됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 회원 추가/수정 모달 -->
+    <div id="member-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMemberModal()">&times;</span>
+            <h2 id="member-modal-title">회원 추가</h2>
+            <form id="member-form">
+                <div class="form-group">
+                    <label for="member-name">이름 *</label>
+                    <input type="text" id="member-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="member-email">이메일 *</label>
+                    <input type="email" id="member-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="member-company">회사명</label>
+                    <input type="text" id="member-company">
+                </div>
+                <div class="form-group">
+                    <label for="member-phone">전화번호</label>
+                    <input type="tel" id="member-phone">
+                </div>
+                <div class="form-group">
+                    <label for="member-type">회원유형 *</label>
+                    <select id="member-type" required>
+                        <option value="buyer">매입업체</option>
+                        <option value="supplier">유통업체</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeMemberModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 상품 추가/수정 모달 -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeProductModal()">&times;</span>
+            <h2 id="product-modal-title">상품 추가</h2>
+            <form id="product-form-admin">
+                <div class="form-group">
+                    <label for="admin-product-name">상품명 *</label>
+                    <input type="text" id="admin-product-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-product-description">설명</label>
+                    <textarea id="admin-product-description" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="admin-product-quantity">수량 *</label>
+                        <input type="number" id="admin-product-quantity" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-product-unit">단위</label>
+                        <input type="text" id="admin-product-unit" placeholder="개, kg 등">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="admin-product-min-price">최저가 (원) *</label>
+                    <input type="number" id="admin-product-min-price" required min="0">
+                </div>
+                <div class="form-group">
+                    <label for="admin-product-supplier">유통업체 *</label>
+                    <input type="text" id="admin-product-supplier" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeProductModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 배너 추가/수정 모달 -->
+    <div id="banner-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBannerModal()">&times;</span>
+            <h2 id="banner-modal-title">배너 추가</h2>
+            <form id="banner-form">
+                <div class="form-group">
+                    <label for="banner-title">제목 *</label>
+                    <input type="text" id="banner-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="banner-description">설명</label>
+                    <textarea id="banner-description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="banner-image-url">이미지 URL</label>
+                    <input type="url" id="banner-image-url" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="banner-link">링크 URL</label>
+                    <input type="url" id="banner-link" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label for="banner-order">순서 *</label>
+                    <input type="number" id="banner-order" required min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="banner-active"> 활성화
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeBannerModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <script>
+        // 관리자 로그인 확인
+        function checkAdminLogin() {
+            const adminUser = JSON.parse(localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser') || 'null');
+            if (!adminUser || adminUser.type !== 'admin') {
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = 'backoffice-login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // 로그아웃
+        function logout() {
+            if (confirm('로그아웃하시겠습니까?')) {
+                localStorage.removeItem('adminUser');
+                sessionStorage.removeItem('adminUser');
+                window.location.href = 'backoffice-login.html';
+            }
+        }
+
+        // 페이지 로드 시 관리자 로그인 확인
+        if (!checkAdminLogin()) {
+            // 로그인 페이지로 리다이렉트되므로 여기서 실행 중단
+        } else {
+            // 로그인된 관리자 정보 표시
+            const adminUser = JSON.parse(localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser'));
+            if (adminUser) {
+                const loginBtn = document.querySelector('.login-btn');
+                if (loginBtn) {
+                    loginBtn.textContent = `${adminUser.name} (로그아웃)`;
+                }
+            }
+        }
+    </script>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>마켓베르데</h3>
+                    <p>회사명: 에이포스</p>
+                    <p>대표자: 황지후</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="index.html#products">경매 목록</a>
+                    <a href="register.html">경매 등록</a>
+                    <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+                    <a href="backoffice-login.html">백오피스</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 마켓베르데 (에이포스). All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

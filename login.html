@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 마켓베르데</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="container">
+                <div class="logo">마켓베르데</div>
+                <div class="header-right">
+                    <a href="index.html" class="back-link">← 홈으로</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="login-container">
+        <div class="login-box">
+            <h1>로그인</h1>
+            <p class="login-subtitle">마켓베르데에 로그인하세요</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" required placeholder="이메일을 입력하세요">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">비밀번호</label>
+                    <input type="password" id="password" required placeholder="비밀번호를 입력하세요">
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="remember-me">
+                        <span>로그인 상태 유지</span>
+                    </label>
+                    <a href="#" class="forgot-link">비밀번호 찾기</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">로그인</button>
+            </form>
+
+            <div class="login-divider">
+                <span>또는</span>
+            </div>
+
+            <div class="signup-section">
+                <p>아직 계정이 없으신가요?</p>
+                <button class="btn btn-secondary btn-block" onclick="window.location.href='register-user.html'">회원가입</button>
+            </div>
+
+            <div class="user-type-section">
+                <p>업체 회원이신가요?</p>
+                <div class="user-type-buttons">
+                    <button class="btn btn-outline" onclick="window.location.href='register.html'">유통업체 등록</button>
+                    <button class="btn btn-outline" onclick="window.location.href='backoffice-login.html'">백오피스</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 로그인 폼 처리
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('remember-me').checked;
+            
+            // 간단한 로그인 처리 (실제로는 서버 인증 필요)
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                // 로그인 정보 저장
+                const loginData = {
+                    email: user.email,
+                    name: user.name,
+                    type: user.type || 'buyer',
+                    loginTime: new Date().toISOString()
+                };
+                
+                if (rememberMe) {
+                    localStorage.setItem('currentUser', JSON.stringify(loginData));
+                } else {
+                    sessionStorage.setItem('currentUser', JSON.stringify(loginData));
+                }
+                
+                alert('로그인 성공!');
+                window.location.href = 'index.html';
+            } else {
+                // 테스트용: 이메일만 입력해도 로그인 가능
+                if (email) {
+                    const loginData = {
+                        email: email,
+                        name: email.split('@')[0],
+                        type: 'buyer',
+                        loginTime: new Date().toISOString()
+                    };
+                    
+                    if (rememberMe) {
+                        localStorage.setItem('currentUser', JSON.stringify(loginData));
+                    } else {
+                        sessionStorage.setItem('currentUser', JSON.stringify(loginData));
+                    }
+                    
+                    alert('로그인 성공! (테스트 모드)');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('이메일과 비밀번호를 입력해주세요.');
+                }
+            }
+        });
+    </script>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>마켓베르데</h3>
+                    <p>회사명: 에이포스</p>
+                    <p>대표자: 황지후</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="index.html#products">경매 목록</a>
+                    <a href="register.html">경매 등록</a>
+                    <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+                    <a href="backoffice-login.html">백오피스</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 마켓베르데 (에이포스). All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

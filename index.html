@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마켓베르데 - 경매 목록</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="container">
+                <div class="logo">마켓베르데</div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <input type="text" placeholder="상품 검색..." id="search-input">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                    <div class="header-icons">
+                        <a href="#" class="cart-icon" onclick="alert('장바구니 기능은 준비 중입니다.'); return false;">
+                            🛒 <span class="badge">0</span>
+                        </a>
+                        <a href="mypage.html" class="user-icon" id="user-icon">👤</a>
+                        <a href="login.html" class="login-btn" id="login-btn">로그인</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <nav class="main-nav">
+            <div class="container">
+                <a href="index.html" class="active">홈</a>
+                <a href="index.html#products">경매 목록</a>
+                <a href="register.html">경매 등록</a>
+                <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 배너 섹션 -->
+    <section class="banner-section">
+        <div class="banner-slider">
+            <div class="banner-item active">
+                <div class="banner-content">
+                    <h2>특가 상품</h2>
+                    <p>5만원 이상 구매 시 특별 할인</p>
+                    <button class="banner-btn">자세히 보기</button>
+                </div>
+            </div>
+            <div class="banner-dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <div class="main-layout container">
+        <!-- 카테고리 사이드바 -->
+        <aside class="category-sidebar">
+            <div class="category-header">
+                <span class="menu-icon">☰</span>
+                <h3>전체카테고리</h3>
+            </div>
+            <ul class="category-list">
+                <li class="category-item">
+                    <span class="category-icon">📦</span>
+                    <span>가공식품</span>
+                    <span class="arrow">›</span>
+                </li>
+                <li class="category-item">
+                    <span class="category-icon">🥬</span>
+                    <span>신선식품</span>
+                    <span class="arrow">›</span>
+                </li>
+                <li class="category-item">
+                    <span class="category-icon">💊</span>
+                    <span>건강식품</span>
+                    <span class="arrow">›</span>
+                </li>
+                <li class="category-item">
+                    <span class="category-icon">💄</span>
+                    <span>뷰티</span>
+                    <span class="arrow">›</span>
+                </li>
+                <li class="category-item">
+                    <span class="category-icon">👕</span>
+                    <span>패션의류/잡화</span>
+                    <span class="arrow">›</span>
+                </li>
+                <li class="category-item">
+                    <span class="category-icon">🍳</span>
+                    <span>생활/주방</span>
+                    <span class="arrow">›</span>
+                </li>
+                <li class="category-item">
+                    <span class="category-icon">🔌</span>
+                    <span>가전</span>
+                    <span class="arrow">›</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- 메인 콘텐츠 -->
+        <main class="main-content">
+            <!-- 테마 섹션 -->
+            <div class="theme-section">
+                <div class="theme-item">
+                    <div class="theme-icon">✓</div>
+                    <span>떠리픽</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">❄️</div>
+                    <span>빙골라담기</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">🍲</div>
+                    <span>푸드테마관</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">☁️</div>
+                    <span>리퍼마켓</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">📦</div>
+                    <span>못난이마켓</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">🔍</div>
+                    <span>뷰티탐정단</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">💊</div>
+                    <span>오천원건강</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">👔</div>
+                    <span>패션브랜드</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">🏢</div>
+                    <span>사업자관</span>
+                </div>
+                <div class="theme-item">
+                    <div class="theme-icon">🚚</div>
+                    <span>대량구매관</span>
+                </div>
+            </div>
+
+            <!-- 상품 목록 섹션 -->
+            <section id="products" class="products-section">
+                <div class="section-header">
+                    <h2>진행 중인 경매</h2>
+                    <p>유통기한이 임박한 상품들을 확인하고 입찰하세요</p>
+                </div>
+
+                <div id="products-container" class="products-grid">
+                    <!-- 상품 카드들이 여기에 동적으로 추가됩니다 -->
+                </div>
+
+                <div id="no-products" class="no-products" style="display: none;">
+                    <p>현재 진행 중인 경매가 없습니다.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 입찰 모달 -->
+    <div id="bid-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>입찰하기</h2>
+            <div id="bid-product-info"></div>
+            <form id="bid-form">
+                <div class="form-group">
+                    <label for="bidder-name">입찰자명</label>
+                    <input type="text" id="bidder-name" required placeholder="회사명 또는 이름을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label for="bid-amount">입찰 금액 (원)</label>
+                    <input type="number" id="bid-amount" required min="0" placeholder="입찰 금액을 입력하세요">
+                    <small id="min-price-hint"></small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeBidModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">입찰하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>마켓베르데</h3>
+                    <p>회사명: 에이포스</p>
+                    <p>대표자: 황지후</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="index.html#products">경매 목록</a>
+                    <a href="register.html">경매 등록</a>
+                    <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+                    <a href="backoffice-login.html">백오피스</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 마켓베르데 (에이포스). All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

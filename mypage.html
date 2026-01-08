@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마켓베르데 쇼핑몰 - 마이페이지</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="container">
+                <div class="logo">마켓베르데</div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <input type="text" placeholder="상품 검색..." id="search-input">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                    <div class="header-icons">
+                        <a href="#" class="cart-icon">🛒 <span class="badge">0</span></a>
+                        <a href="mypage.html" class="user-icon active">👤</a>
+                        <a href="#" class="login-btn" id="logout-btn" onclick="logout()">로그아웃</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <nav class="main-nav">
+            <div class="container">
+                <a href="index.html">홈</a>
+                <a href="index.html#products">경매 목록</a>
+                <a href="register.html">경매 등록</a>
+                <a href="http://localhost:8000/index.html#best" class="active">마켓베르데 쇼핑몰</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="mypage-header">
+            <div class="user-profile">
+                <div class="profile-avatar">👤</div>
+                <div class="profile-info">
+                    <h2 id="user-name">사용자</h2>
+                    <p id="user-email">이메일</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mypage-tabs">
+            <button class="tab-btn active" onclick="showTab('bids')">내 입찰 내역</button>
+            <button class="tab-btn" onclick="showTab('products')">내 상품</button>
+            <button class="tab-btn" onclick="showTab('profile')">프로필</button>
+        </div>
+
+        <!-- 내 입찰 내역 -->
+        <div id="tab-bids" class="tab-content active">
+            <h3>내 입찰 내역</h3>
+            <div id="my-bids-container" class="bids-container">
+                <!-- 동적으로 추가됩니다 -->
+            </div>
+        </div>
+
+        <!-- 내 상품 (유통업체용) -->
+        <div id="tab-products" class="tab-content">
+            <h3>등록한 상품</h3>
+            <div id="my-products-container" class="products-grid">
+                <!-- 동적으로 추가됩니다 -->
+            </div>
+        </div>
+
+        <!-- 프로필 -->
+        <div id="tab-profile" class="tab-content">
+            <h3>프로필 설정</h3>
+            <div class="form-container">
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="profile-name">이름</label>
+                        <input type="text" id="profile-name" placeholder="이름을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-email">이메일</label>
+                        <input type="email" id="profile-email" placeholder="이메일을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-phone">전화번호</label>
+                        <input type="tel" id="profile-phone" placeholder="전화번호를 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-company">회사명</label>
+                        <input type="text" id="profile-company" placeholder="회사명을 입력하세요">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 로그인 확인
+        function checkLogin() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') || 'null');
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            return currentUser;
+        }
+
+        // 로그아웃
+        function logout() {
+            localStorage.removeItem('currentUser');
+            sessionStorage.removeItem('currentUser');
+            alert('로그아웃되었습니다.');
+            window.location.href = 'index.html';
+        }
+
+        // 탭 전환
+        let currentTab = 'bids';
+        function showTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tab === 'bids') {
+                renderMyBids();
+            } else if (tab === 'products') {
+                renderMyProducts();
+            }
+        }
+
+        // 내 입찰 내역 렌더링
+        function renderMyBids() {
+            const user = checkLogin();
+            if (!user) return;
+            
+            const products = JSON.parse(localStorage.getItem('products') || '[]');
+            const container = document.getElementById('my-bids-container');
+            
+            let myBids = [];
+            products.forEach(product => {
+                if (product.bids) {
+                    product.bids.forEach(bid => {
+                        // 입찰자명 또는 이메일로 매칭
+                        const nameMatch = bid.bidderName && (bid.bidderName === user.name || bid.bidderName === user.email.split('@')[0]);
+                        const emailMatch = bid.bidderEmail && bid.bidderEmail === user.email;
+                        if (nameMatch || emailMatch) {
+                            myBids.push({
+                                ...bid,
+                                productName: product.name,
+                                productId: product.id,
+                                auctionEndDate: product.auctionEndDate,
+                                minPrice: product.minPrice
+                            });
+                        }
+                    });
+                }
+            });
+            
+            if (myBids.length === 0) {
+                container.innerHTML = '<p class="no-data">입찰 내역이 없습니다.</p>';
+                return;
+            }
+            
+            // 시간순 정렬 (최신순)
+            myBids.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            container.innerHTML = myBids.map(bid => {
+                const isEnded = new Date(bid.auctionEndDate) < new Date();
+                return `
+                <div class="bid-card ${isEnded ? 'ended' : ''}">
+                    <div class="bid-card-header">
+                        <h4>${bid.productName}</h4>
+                        <span class="bid-amount">${bid.amount.toLocaleString()}원</span>
+                    </div>
+                    <div class="bid-card-info">
+                        <p>입찰 시간: ${new Date(bid.timestamp).toLocaleString('ko-KR')}</p>
+                        <p>경매 종료: ${new Date(bid.auctionEndDate).toLocaleString('ko-KR')}</p>
+                        <p>최저가: ${bid.minPrice.toLocaleString()}원</p>
+                        <p class="bid-status">${isEnded ? '경매 종료' : '진행 중'}</p>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        // 내 상품 렌더링 (유통업체용)
+        function renderMyProducts() {
+            const user = checkLogin();
+            if (!user) return;
+            
+            const products = JSON.parse(localStorage.getItem('products') || '[]');
+            const container = document.getElementById('my-products-container');
+            
+            const myProducts = products.filter(p => p.supplierName === user.name || p.supplierEmail === user.email);
+            
+            if (myProducts.length === 0) {
+                container.innerHTML = '<p class="no-data">등록한 상품이 없습니다.</p>';
+                return;
+            }
+            
+            container.innerHTML = myProducts.map(product => `
+                <div class="product-card">
+                    <div class="product-header">
+                        <div class="product-name">${product.name}</div>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-info-item">
+                            <span class="product-info-label">입찰 수</span>
+                            <span class="product-info-value">${product.bids ? product.bids.length : 0}건</span>
+                        </div>
+                        <div class="product-info-item">
+                            <span class="product-info-label">최저가</span>
+                            <span class="product-info-value">${product.minPrice.toLocaleString()}원</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.location.href='index.html'">상세보기</button>
+                </div>
+            `).join('');
+        }
+
+        // 프로필 로드
+        function loadProfile() {
+            const user = checkLogin();
+            if (!user) return;
+            
+            document.getElementById('user-name').textContent = user.name || '사용자';
+            document.getElementById('user-email').textContent = user.email || '';
+            document.getElementById('profile-name').value = user.name || '';
+            document.getElementById('profile-email').value = user.email || '';
+        }
+
+        // 프로필 저장
+        document.getElementById('profile-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = checkLogin();
+            if (!user) return;
+            
+            user.name = document.getElementById('profile-name').value;
+            user.email = document.getElementById('profile-email').value;
+            user.phone = document.getElementById('profile-phone').value;
+            user.company = document.getElementById('profile-company').value;
+            
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            alert('프로필이 저장되었습니다.');
+            loadProfile();
+        });
+
+        // 페이지 로드 시
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfile();
+            renderMyBids();
+        });
+    </script>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>마켓베르데</h3>
+                    <p>회사명: 에이포스</p>
+                    <p>대표자: 황지후</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="index.html#products">경매 목록</a>
+                    <a href="register.html">경매 등록</a>
+                    <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+                    <a href="backoffice-login.html">백오피스</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 마켓베르데 (에이포스). All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
