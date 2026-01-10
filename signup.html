@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - 마켓베르데</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="container">
+                <div class="logo">마켓베르데</div>
+                <div class="header-right">
+                    <a href="index.html" class="back-link">← 홈으로</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="login-container">
+        <div class="login-box">
+            <h1>회원가입</h1>
+            <p class="login-subtitle">마켓베르데에 가입하세요</p>
+            
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-name">이름 *</label>
+                    <input type="text" id="signup-name" required placeholder="이름을 입력하세요">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-email">이메일 *</label>
+                    <input type="email" id="signup-email" required placeholder="이메일을 입력하세요">
+                    <small id="email-check-result"></small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password">비밀번호 *</label>
+                    <input type="password" id="signup-password" required placeholder="비밀번호를 입력하세요" minlength="6">
+                    <small>6자 이상 입력해주세요</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password-confirm">비밀번호 확인 *</label>
+                    <input type="password" id="signup-password-confirm" required placeholder="비밀번호를 다시 입력하세요">
+                    <small id="password-match-result"></small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-phone">휴대폰 번호 *</label>
+                    <div class="phone-input-group">
+                        <input type="tel" id="signup-phone" required placeholder="010-1234-5678" pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}">
+                        <button type="button" class="btn btn-secondary" id="send-verification-btn" onclick="sendVerificationCode()">인증번호 전송</button>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="verification-code-group" style="display: none;">
+                    <label for="verification-code">인증번호 *</label>
+                    <div class="phone-input-group">
+                        <input type="text" id="verification-code" placeholder="인증번호 6자리" maxlength="6">
+                        <button type="button" class="btn btn-secondary" id="verify-btn" onclick="verifyCode()">인증확인</button>
+                    </div>
+                    <small id="verification-result"></small>
+                    <small class="timer-text" id="timer-text"></small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-company">회사명 (선택)</label>
+                    <input type="text" id="signup-company" placeholder="회사명을 입력하세요">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-type">회원유형 *</label>
+                    <select id="signup-type" required>
+                        <option value="buyer">매입업체</option>
+                        <option value="supplier">유통업체</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="agree-terms" required>
+                        <span>이용약관 및 개인정보처리방침에 동의합니다 *</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="signup-submit-btn" disabled>회원가입</button>
+            </form>
+
+            <div class="login-divider">
+                <span>이미 계정이 있으신가요?</span>
+            </div>
+
+            <div class="signup-section">
+                <a href="login.html" class="btn btn-secondary btn-block" style="text-decoration: none; display: block; text-align: center;">로그인</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>마켓베르데</h3>
+                    <p>회사명: 에이포스</p>
+                    <p>대표자: 황지후</p>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">홈</a>
+                    <a href="index.html#products">경매 목록</a>
+                    <a href="register.html">경매 등록</a>
+                    <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
+                    <a href="backoffice-login.html">백오피스</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 마켓베르데 (에이포스). All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="api_client.js"></script>
+    <script>
+        let verificationCode = null;
+        let verificationTimer = null;
+        let timeLeft = 180; // 3분
+        let isPhoneVerified = false;
+
+        // 휴대폰 번호 포맷팅
+        function formatPhoneNumber(value) {
+            const numbers = value.replace(/[^\d]/g, '');
+            if (numbers.length <= 3) return numbers;
+            if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+            return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+        }
+
+        // 인증번호 전송
+        async function sendVerificationCode() {
+            const phoneInput = document.getElementById('signup-phone');
+            const phone = phoneInput.value.replace(/[^\d]/g, '');
+            
+            if (phone.length !== 11) {
+                alert('올바른 휴대폰 번호를 입력해주세요. (11자리)');
+                return;
+            }
+            
+            // 인증번호 생성 (실제로는 서버에서 SMS 발송)
+            verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            // 로컬 스토리지에 저장 (실제로는 서버에서 처리)
+            sessionStorage.setItem('verification_code', verificationCode);
+            sessionStorage.setItem('verification_phone', phone);
+            sessionStorage.setItem('verification_time', Date.now().toString());
+            
+            // 인증번호 입력 필드 표시
+            document.getElementById('verification-code-group').style.display = 'block';
+            document.getElementById('send-verification-btn').disabled = true;
+            document.getElementById('send-verification-btn').textContent = '재전송';
+            
+            // 타이머 시작
+            timeLeft = 180;
+            startTimer();
+            
+            // 테스트용: 콘솔에 인증번호 출력 (실제 환경에서는 제거)
+            console.log('인증번호:', verificationCode);
+            alert(`인증번호가 전송되었습니다.\n(테스트용 인증번호: ${verificationCode})`);
+        }
+
+        // 타이머 시작
+        function startTimer() {
+            if (verificationTimer) {
+                clearInterval(verificationTimer);
+            }
+            
+            updateTimer();
+            verificationTimer = setInterval(() => {
+                timeLeft--;
+                updateTimer();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(verificationTimer);
+                    document.getElementById('timer-text').textContent = '인증 시간이 만료되었습니다.';
+                    document.getElementById('timer-text').style.color = 'var(--danger-color)';
+                    document.getElementById('verification-code').disabled = true;
+                    document.getElementById('verify-btn').disabled = true;
+                }
+            }, 1000);
+        }
+
+        // 타이머 업데이트
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timer-text').textContent = `남은 시간: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer-text').style.color = timeLeft < 60 ? 'var(--danger-color)' : 'var(--text-light)';
+        }
+
+        // 인증번호 확인
+        function verifyCode() {
+            const inputCode = document.getElementById('verification-code').value;
+            const savedCode = sessionStorage.getItem('verification_code');
+            const savedPhone = sessionStorage.getItem('verification_phone');
+            const currentPhone = document.getElementById('signup-phone').value.replace(/[^\d]/g, '');
+            
+            if (!savedCode) {
+                alert('인증번호를 먼저 전송해주세요.');
+                return;
+            }
+            
+            if (savedPhone !== currentPhone) {
+                alert('인증번호를 전송한 휴대폰 번호와 일치하지 않습니다.');
+                return;
+            }
+            
+            if (inputCode === savedCode) {
+                isPhoneVerified = true;
+                document.getElementById('verification-result').textContent = '인증이 완료되었습니다.';
+                document.getElementById('verification-result').style.color = 'var(--success-color)';
+                document.getElementById('verification-code').disabled = true;
+                document.getElementById('verify-btn').disabled = true;
+                document.getElementById('send-verification-btn').disabled = true;
+                clearInterval(verificationTimer);
+                document.getElementById('timer-text').textContent = '';
+                checkFormValidity();
+            } else {
+                document.getElementById('verification-result').textContent = '인증번호가 일치하지 않습니다.';
+                document.getElementById('verification-result').style.color = 'var(--danger-color)';
+            }
+        }
+
+        // 이메일 중복 확인
+        async function checkEmailDuplicate() {
+            const email = document.getElementById('signup-email').value;
+            const resultElement = document.getElementById('email-check-result');
+            
+            if (!email) {
+                resultElement.textContent = '';
+                return;
+            }
+            
+            const member = await getMemberByEmail(email);
+            if (member) {
+                resultElement.textContent = '이미 사용 중인 이메일입니다.';
+                resultElement.style.color = 'var(--danger-color)';
+                return false;
+            } else {
+                resultElement.textContent = '사용 가능한 이메일입니다.';
+                resultElement.style.color = 'var(--success-color)';
+                return true;
+            }
+        }
+
+        // 비밀번호 일치 확인
+        function checkPasswordMatch() {
+            const password = document.getElementById('signup-password').value;
+            const confirm = document.getElementById('signup-password-confirm').value;
+            const resultElement = document.getElementById('password-match-result');
+            
+            if (!confirm) {
+                resultElement.textContent = '';
+                return false;
+            }
+            
+            if (password === confirm) {
+                resultElement.textContent = '비밀번호가 일치합니다.';
+                resultElement.style.color = 'var(--success-color)';
+                return true;
+            } else {
+                resultElement.textContent = '비밀번호가 일치하지 않습니다.';
+                resultElement.style.color = 'var(--danger-color)';
+                return false;
+            }
+        }
+
+        // 폼 유효성 검사
+        function checkFormValidity() {
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const passwordConfirm = document.getElementById('signup-password-confirm').value;
+            const phone = document.getElementById('signup-phone').value;
+            const agreeTerms = document.getElementById('agree-terms').checked;
+            
+            const isValid = name && email && password && password === passwordConfirm && 
+                          phone && isPhoneVerified && agreeTerms;
+            
+            document.getElementById('signup-submit-btn').disabled = !isValid;
+        }
+
+        // 휴대폰 번호 입력 포맷팅
+        document.getElementById('signup-phone').addEventListener('input', function(e) {
+            e.target.value = formatPhoneNumber(e.target.value);
+            // 인증이 완료된 상태에서 번호가 변경되면 인증 초기화
+            if (isPhoneVerified && e.target.value.replace(/[^\d]/g, '') !== sessionStorage.getItem('verification_phone')) {
+                isPhoneVerified = false;
+                document.getElementById('verification-code-group').style.display = 'none';
+                document.getElementById('verification-code').value = '';
+                document.getElementById('verification-result').textContent = '';
+                document.getElementById('send-verification-btn').disabled = false;
+                document.getElementById('send-verification-btn').textContent = '인증번호 전송';
+                if (verificationTimer) {
+                    clearInterval(verificationTimer);
+                }
+            }
+            checkFormValidity();
+        });
+
+        // 이메일 중복 확인
+        document.getElementById('signup-email').addEventListener('blur', async function() {
+            await checkEmailDuplicate();
+            checkFormValidity();
+        });
+
+        // 비밀번호 일치 확인
+        document.getElementById('signup-password-confirm').addEventListener('input', function() {
+            checkPasswordMatch();
+            checkFormValidity();
+        });
+
+        // 폼 입력 감지
+        ['signup-name', 'signup-password', 'agree-terms'].forEach(id => {
+            document.getElementById(id).addEventListener('input', checkFormValidity);
+            document.getElementById(id).addEventListener('change', checkFormValidity);
+        });
+
+        // 회원가입 폼 제출
+        document.getElementById('signup-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!isPhoneVerified) {
+                alert('휴대폰 인증을 완료해주세요.');
+                return;
+            }
+            
+            const emailAvailable = await checkEmailDuplicate();
+            if (!emailAvailable) {
+                alert('이미 사용 중인 이메일입니다.');
+                return;
+            }
+            
+            if (!checkPasswordMatch()) {
+                alert('비밀번호가 일치하지 않습니다.');
+                return;
+            }
+            
+            const member = {
+                name: document.getElementById('signup-name').value,
+                email: document.getElementById('signup-email').value,
+                password: document.getElementById('signup-password').value,
+                phone: document.getElementById('signup-phone').value.replace(/[^\d]/g, ''),
+                company: document.getElementById('signup-company').value || '',
+                type: document.getElementById('signup-type').value
+            };
+            
+            try {
+                const memberId = await addMember(member);
+                alert('회원가입이 완료되었습니다!');
+                
+                // 자동 로그인
+                const loginData = {
+                    email: member.email,
+                    name: member.name,
+                    type: member.type,
+                    loginTime: new Date().toISOString()
+                };
+                localStorage.setItem('currentUser', JSON.stringify(loginData));
+                
+                // 홈으로 이동
+                window.location.href = 'index.html';
+            } catch (error) {
+                alert('회원가입 중 오류가 발생했습니다: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

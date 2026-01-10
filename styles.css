@@ -1352,3 +1352,48 @@ select:focus {
     outline: none;
     border-color: var(--primary-color);
 }
+
+/* 회원가입 페이지 스타일 */
+.phone-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.phone-input-group input {
+    flex: 1;
+}
+
+.phone-input-group button {
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+.timer-text {
+    display: block;
+    margin-top: 5px;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+#email-check-result,
+#password-match-result,
+#verification-result {
+    display: block;
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+#verification-code-group {
+    animation: slideDown 0.3s;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
