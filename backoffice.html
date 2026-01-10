@@ -12,7 +12,7 @@
             <div class="container">
                 <div class="logo">마켓베르데 <span class="admin-badge">백오피스</span></div>
                 <div class="header-right">
-                    <a href="index.html" class="back-link">← 프론트로</a>
+                    <a href="#" id="frontend-link" class="back-link">← 프론트로</a>
                     <a href="#" class="login-btn" onclick="logout()">로그아웃</a>
                 </div>
             </div>
@@ -301,6 +301,7 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script src="api_client.js"></script>
     <script src="admin.js"></script>
     <script>
@@ -320,7 +321,7 @@
             if (confirm('로그아웃하시겠습니까?')) {
                 localStorage.removeItem('adminUser');
                 sessionStorage.removeItem('adminUser');
-                window.location.href = 'backoffice-login.html';
+                window.location.href = getBackofficeUrl('backoffice-login.html');
             }
         }
 
@@ -336,6 +337,19 @@
                     loginBtn.textContent = `${adminUser.name} (로그아웃)`;
                 }
             }
+            
+            // 링크 설정
+            const frontendLink = document.getElementById('frontend-link');
+            const frontendHomeLink = document.getElementById('frontend-home-link');
+            const frontendProductsLink = document.getElementById('frontend-products-link');
+            const frontendRegisterLink = document.getElementById('frontend-register-link');
+            const backofficeLink = document.getElementById('backoffice-link');
+            
+            if (frontendLink) frontendLink.href = getFrontendUrl('index.html');
+            if (frontendHomeLink) frontendHomeLink.href = getFrontendUrl('index.html');
+            if (frontendProductsLink) frontendProductsLink.href = getFrontendUrl('index.html#products');
+            if (frontendRegisterLink) frontendRegisterLink.href = getFrontendUrl('register.html');
+            if (backofficeLink) backofficeLink.href = getBackofficeUrl('backoffice-login.html');
         }
     </script>
 
@@ -348,11 +362,11 @@
                     <p>대표자: 황지후</p>
                 </div>
                 <div class="footer-links">
-                    <a href="index.html">홈</a>
-                    <a href="index.html#products">경매 목록</a>
-                    <a href="register.html">경매 등록</a>
-                    <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
-                    <a href="backoffice-login.html">백오피스</a>
+                    <a href="#" id="frontend-home-link">홈</a>
+                    <a href="#" id="frontend-products-link">경매 목록</a>
+                    <a href="#" id="frontend-register-link">경매 등록</a>
+                    <a href="https://afoursshop.vercel.app/">마켓베르데 쇼핑몰</a>
+                    <a href="#" id="backoffice-link">백오피스</a>
                 </div>
             </div>
             <div class="footer-bottom">

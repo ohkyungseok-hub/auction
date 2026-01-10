@@ -12,7 +12,7 @@
             <div class="container">
                 <div class="logo">마켓베르데 <span class="admin-badge">백오피스</span></div>
                 <div class="header-right">
-                    <a href="index.html" class="back-link">← 홈으로</a>
+                    <a href="#" id="frontend-link" class="back-link">← 홈으로</a>
                 </div>
             </div>
         </div>
@@ -65,7 +65,7 @@
                     <a href="index.html#products">경매 목록</a>
                     <a href="register.html">경매 등록</a>
                     <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
-                    <a href="backoffice.html">백오피스</a>
+                    <a href="#" id="backoffice-link">백오피스</a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -74,6 +74,7 @@
         </div>
     </footer>
 
+    <script src="config.js"></script>
     <script src="api_client.js"></script>
     <script>
         // 관리자 로그인 폼 처리 (비동기)
@@ -103,10 +104,19 @@
                 }
                 
                 alert('관리자 로그인 성공!');
-                window.location.href = 'backoffice.html';
+                window.location.href = getBackofficeUrl('backoffice.html');
             } else {
                 alert('관리자 ID 또는 비밀번호가 올바르지 않습니다.');
             }
+        });
+        
+        // 링크 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const frontendLink = document.getElementById('frontend-link');
+            const backofficeLink = document.getElementById('backoffice-link');
+            
+            if (frontendLink) frontendLink.href = getFrontendUrl('index.html');
+            if (backofficeLink) backofficeLink.href = getBackofficeUrl('backoffice.html');
         });
     </script>
 </body>

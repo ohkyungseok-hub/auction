@@ -97,7 +97,7 @@
                     <a href="index.html#products">경매 목록</a>
                     <a href="register.html">경매 등록</a>
                     <a href="http://localhost:8000/index.html#best">마켓베르데 쇼핑몰</a>
-                    <a href="backoffice-login.html">백오피스</a>
+                    <a href="#" id="backoffice-link">백오피스</a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -106,6 +106,7 @@
         </div>
     </footer>
 
+    <script src="config.js"></script>
     <script src="api_client.js"></script>
     <script src="script.js"></script>
     <script>
@@ -136,6 +137,14 @@
                 }, 1000);
             } catch (error) {
                 alert('경매 등록 중 오류가 발생했습니다: ' + error.message);
+            }
+        });
+        
+        // 백오피스 링크 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const backofficeLink = document.getElementById('backoffice-link');
+            if (backofficeLink) {
+                backofficeLink.href = getBackofficeUrl('backoffice-login.html');
             }
         });
     </script>
